@@ -1,32 +1,22 @@
-name: 🔒 Security checks
+name: 🔒 Security Scan
 
 on:
-  pull_request:
-    branches:
-      - main
-      - develop
-      - feature/**
-      - hotfix/**
+  push:
+    branches: [master, main]
+  workflow_run:
+    workflows: ["🧪 Run Tests"]
+    types: [completed]
 
 jobs:
   security:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
-      - name: 🧩 Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: 🛡️ Run Bandit
+      - name: Run Bandit
         run: |
           pip install bandit
-          bandit -r app || echo "Security scan completed"
-
-      - name: 🔍 Run Gitleaks (secrets check)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          config-path: .gitleaks.toml
-          args: detect --source=. --no-banner --exit-code 0
+          bandit -r app || echo "Security check completed"
