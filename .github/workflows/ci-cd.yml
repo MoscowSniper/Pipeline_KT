@@ -75,12 +75,12 @@ jobs:
       - name: 🔢 Bump version
         id: version
         run: |
-          OLD_VERSION=$(cat version.txt)
+          OLD_VERSION=$(cat .idea/version.txt)
           echo "Old version: $OLD_VERSION"
           
           python scripts/bump_version.py ${{ steps.update-type.outputs.type }}
           
-          NEW_VERSION=$(cat version.txt)
+          NEW_VERSION=$(cat .idea/version.txt)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
 
@@ -92,7 +92,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add version.txt changelog.md
+          git add .idea/version.txt changelog.md
           git commit -m "ci: update version to ${{ steps.version.outputs.new_version }}"
           git push
 
