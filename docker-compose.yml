@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  pipeline-app:
+    image: ${DOCKER_USERNAME}/pipeline-app:${APP_VERSION}
+    container_name: pipeline-app
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
