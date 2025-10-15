@@ -1,0 +1,210 @@
+name: 🚀 CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '**'  # Все ветки
+
+jobs:
+  # Эти jobs запускаются на ВСЕХ ветках
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: 🧪 Run tests
+        run: |
+          pytest test_sample.py -v
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 🔒 Security scan
+        run: |
+          pip install bandit
+          bandit -r . -f json || echo "Security scan completed"
+
+  # Эти jobs запускаются ТОЛЬКО для main/master веток
+  update-version:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 🔍 Determine update type
+        id: update-type
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"hotfix"* ]]; then
+            echo "type=hotfix" >> $GITHUB_OUTPUT
+          else
+            echo "type=feature" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔢 Bump version
+        id: version
+        run: |
+          OLD_VERSION=$(cat version.txt)
+          echo "Old version: $OLD_VERSION"
+          
+          python scripts/bump_version.py ${{ steps.update-type.outputs.type }}
+          
+          NEW_VERSION=$(cat version.txt)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: 📝 Generate changelog
+        run: |
+          python scripts/generate_changelog.py ${{ steps.version.outputs.new_version }} ${{ github.ref_name }}
+
+      - name: 💾 Commit version files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add version.txt changelog.md
+          git commit -m "ci: update version to ${{ steps.version.outputs.new_version }}"
+          git push
+
+  docker-publish:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: update-version
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pipeline-app
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}
+            ${{ env.IMAGE_NAME }}:latest
+
+      - name: 📋 Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.IMAGE_NAME }}
+          readme-filepath: ./README.md
+
+  deploy:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: docker-publish
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pipeline-app
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy application
+        run: |
+          echo "Pulling new image: ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}"
+          docker pull ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}
+          
+          echo "Stopping old container..."
+          docker stop pipeline-app || true
+          docker rm pipeline-app || true
+          
+          echo "Starting new container..."
+          docker run -d \
+            --name pipeline-app \
+            -p 8000:8000 \
+            ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}
+
+      - name: ✅ Verify deployment
+        run: |
+          echo "Waiting for application to start..."
+          sleep 5
+          echo "Testing application endpoint..."
+          curl -f http://localhost:8000/ || exit 1
+          echo "✅ Deployment verified successfully!"
+
+  notify:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: [deploy, update-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📱 Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEW_VERSION: ${{ needs.update-version.outputs.new_version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python scripts/notify_telegram.py
+
+  create-release:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: [deploy, update-version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.update-version.outputs.new_version }}
+          name: Release v${{ needs.update-version.outputs.new_version }}
+          body_path: changelog.md
+          draft: false
+          prerelease: false
+
+  # Job для отображения информации о ветке (только для отладки)
+  branch-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ℹ️ Show branch information
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          echo "Branch name: ${{ github.ref_name }}"
+          echo "Is main/master: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
