@@ -6,6 +6,9 @@ app = Flask(__name__)
 def index():
     return jsonify({"message": "Hello from your CI/CD pipeline!"})
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "healthy"})
 @app.route("/version")
 def version():
     try:
@@ -16,4 +19,4 @@ def version():
     return jsonify({"version": version})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, debug=False)
