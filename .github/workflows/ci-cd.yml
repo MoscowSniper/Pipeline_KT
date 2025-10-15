@@ -177,7 +177,7 @@ jobs:
           NEW_VERSION: ${{ needs.update-version.outputs.new_version }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python scripts/notify_telegram.py
+          python .idea/scripts/notify_telegram.py
 
   create-release:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'

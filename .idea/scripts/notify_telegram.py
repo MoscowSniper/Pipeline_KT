@@ -65,7 +65,7 @@ if __name__ == "__main__":
         print(f"❌ Ошибка при отправке сообщения: {e}")
         sys.exit(1)
 
-    if Path("changelog.md").exists():
+    if Path(".idea/changelog.md").exists():
         try:
             send_changelog_file("changelog.md", f"📜 Changelog для {version}")
             print("✅ changelog.md успешно отправлен!")
