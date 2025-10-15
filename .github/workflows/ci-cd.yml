@@ -131,7 +131,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: docker-publish
+    needs: [ docker-publish, update-version ]  # Добавьте update-version в needs
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pipeline-app
@@ -143,11 +143,11 @@ jobs:
         run: |
           echo "Pulling new image: ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}"
           docker pull ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}
-          
+
           echo "Stopping old container..."
           docker stop pipeline-app || true
           docker rm pipeline-app || true
-          
+
           echo "Starting new container..."
           docker run -d \
             --name pipeline-app \
