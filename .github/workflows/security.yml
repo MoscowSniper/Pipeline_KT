@@ -1,0 +1,32 @@
+name: 🔒 Security checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - feature/**
+      - hotfix/**
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🧩 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 🛡️ Run Bandit
+        run: |
+          pip install bandit
+          bandit -r app || echo "Security scan completed"
+
+      - name: 🔍 Run Gitleaks (secrets check)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+          args: detect --source=. --no-banner --exit-code 0

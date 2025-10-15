@@ -1,0 +1,22 @@
+name: 🚀 Deploy to Server
+
+on:
+  workflow_run:
+    workflows: ["🏗️ Build & Publish Docker"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: 🚀 Deploy via SSH
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
+            docker pull ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }} &&
+            docker stop pipeline-app || true &&
+            docker rm pipeline-app || true &&
+            docker run -d --name pipeline-app -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }}
+          "
