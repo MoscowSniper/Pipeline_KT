@@ -24,7 +24,7 @@ jobs:
 
       - name: 🧪 Run tests
         run: |
-          pytest test_sample.py -v
+          pytest .idea/tests/test_sample.py -v
 
   security:
     runs-on: ubuntu-latest
