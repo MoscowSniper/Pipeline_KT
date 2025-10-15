@@ -1,3 +1,8 @@
+## 0.29.0 — branch: master
+
+fd4caee - Merge pull request #20 from MoscowSniper/feature/Check (MoscowSniper)
+f1e67c7 - pipeline test 25 (Богдан)
+
 ## 0.28.0 — branch: master
 
 3bb2b51 - Merge pull request #19 from MoscowSniper/feature/Check (MoscowSniper)
