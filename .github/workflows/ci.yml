@@ -3,7 +3,7 @@ name: 🚀 CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - master
     # Можно добавить:
     # - release/*
     # - hotfix/*
