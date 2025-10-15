@@ -180,6 +180,8 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Важно для получения Git истории
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -188,7 +190,7 @@ jobs:
 
       - name: 📦 Install dependencies
         run: |
-          pip install -r .idea/requirements.txt
+          pip install .idea/requirements.txt
 
       - name: 📱 Send Telegram notification
         env:
@@ -196,6 +198,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           NEW_VERSION: ${{ needs.update-version.outputs.new_version }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: |
           python .idea/scripts/notify_telegram.py
 
