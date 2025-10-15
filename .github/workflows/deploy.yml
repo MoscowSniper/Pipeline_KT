@@ -12,14 +12,11 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: 🚀 Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }}
-            docker stop pipeline-app || true
-            docker rm pipeline-app || true
+      - name: 🚀 Deploy via SSH
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
+            docker pull ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }} &&
+            docker stop pipeline-app || true &&
+            docker rm pipeline-app || true &&
             docker run -d --name pipeline-app -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }}
+          "
