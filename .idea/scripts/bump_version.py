@@ -31,7 +31,7 @@ def main():
         print("Usage: bump_version.py <feature|hotfix> [version_file]")
         sys.exit(2)
     bump_type = sys.argv[1]
-    vf = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('version.txt')
+    vf = Path(sys.argv[2]) if len(sys.argv) > 2 else Path('.idea/version.txt')
     old = vf.read_text().strip()
     new = bump_version(old, bump_type)
     vf.write_text(new + "\n")

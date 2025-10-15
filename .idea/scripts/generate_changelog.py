@@ -22,7 +22,7 @@ def get_commits_since(tag):
     return out
 
 def prepend_changelog(new_version, branch):
-    p = Path("changelog.md")
+    p = Path(".idea/changelog.md")
     header = f"## {new_version} — branch: {branch}\n\n"
     commits = get_commits_since(get_latest_tag())
     body = commits + "\n\n"
