@@ -131,7 +131,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: [ docker-publish, update-version ]  # Добавьте update-version в needs
+    needs: [ docker-publish, update-version ]
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pipeline-app
@@ -154,11 +154,22 @@ jobs:
             -p 8000:8000 \
             ${{ env.IMAGE_NAME }}:${{ needs.update-version.outputs.new_version }}
 
+      - name: 🔍 Debug container status
+        run: |
+          echo "=== Checking containers ==="
+          docker ps -a
+          echo "=== Checking images ==="
+          docker images
+          echo "=== Checking container logs ==="
+          docker logs pipeline-app || echo "No logs available"
+
       - name: ✅ Verify deployment
         run: |
           echo "Waiting for application to start..."
-          sleep 5
+          sleep 10
           echo "Testing application endpoint..."
+          curl -v http://localhost:8000/ || echo "First attempt failed, retrying..."
+          sleep 5
           curl -f http://localhost:8000/ || exit 1
           echo "✅ Deployment verified successfully!"
 
