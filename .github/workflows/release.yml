@@ -1,38 +1,42 @@
-name: 🏷️ GitHub Release & Telegram Notify
+name: 🏷️ Create Release & Notify (test + master)
 
 on:
   workflow_run:
-    workflows: ["🚀 Deploy to Server"]
-    types:
-      - completed
+    workflows: ["🚀 Deploy to Server (test + master)"]
+    types: [completed]
+
+  push:
+    branches:
+      - master
+      - main
+      - feature/*
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || startsWith(github.ref, 'refs/heads/feature/') }}
 
     steps:
-      - name: 🧩 Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 📝 Generate changelog
+      - name: Generate changelog
         run: |
           echo "## 📦 Changelog - $(date)" > changelog.md
           git log -1 --pretty=format:"%h %s (%an)" >> changelog.md
 
-      - name: 📢 Notify Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          NEW_VERSION: v${{ github.run_number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/v${{ github.run_number }}
-        run: |
-          python scripts/notify_telegram.py
-
-      - name: 🏷️ Create GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: "Release v${{ github.run_number }}"
           body_path: changelog.md
+
+      - name: Notify Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          MESSAGE="✅ Test release deployed from feature branch: v${{ github.run_number }}%0A🔗 https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" -d chat_id=${TELEGRAM_CHAT_ID} -d text="${MESSAGE}"
