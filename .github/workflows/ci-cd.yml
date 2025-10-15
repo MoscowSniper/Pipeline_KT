@@ -86,7 +86,7 @@ jobs:
 
       - name: 📝 Generate changelog
         run: |
-          python scripts/generate_changelog.py ${{ steps.version.outputs.new_version }} ${{ github.ref_name }}
+          python .idea/scripts/generate_changelog.py ${{ steps.version.outputs.new_version }} ${{ github.ref_name }}
 
       - name: 💾 Commit version files
         run: |
