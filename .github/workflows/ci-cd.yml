@@ -78,7 +78,7 @@ jobs:
           OLD_VERSION=$(cat .idea/version.txt)
           echo "Old version: $OLD_VERSION"
           
-          python scripts/bump_version.py ${{ steps.update-type.outputs.type }}
+          python .idea/scripts/bump_version.py ${{ steps.update-type.outputs.type }}
           
           NEW_VERSION=$(cat .idea/version.txt)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
