@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path)
 
 
 
-# Проверим, существует ли файл
+# Проверим, существует ли файл...
 if not env_path.exists():
     print("❌ Файл .env не найден!")
 else:
