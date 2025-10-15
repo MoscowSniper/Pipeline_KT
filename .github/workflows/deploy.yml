@@ -13,16 +13,44 @@ on:
 
 jobs:
   deploy:
+    needs: build-and-publish
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || startsWith(github.ref, 'refs/heads/feature/') }}
-
     steps:
-      - name: 🚀 Deploy via SSH
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Compose
         run: |
-          echo "Starting deploy..."
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "
-            docker pull ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }} &&
-            docker stop pipeline-app || true &&
-            docker rm pipeline-app || true &&
-            docker run -d --name pipeline-app -p 8000:8000 ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ github.run_number }}
-          "
+          docker-compose version
+
+      - name: Deploy with Docker Compose
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          APP_VERSION: ${{ needs.bump-version.outputs.new_version }}
+        run: |
+          # Pull the new image
+          docker pull ${{ secrets.DOCKER_USERNAME }}/pipeline-app:${{ needs.bump-version.outputs.new_version }}
+
+          # Stop and remove old container if exists
+          docker stop pipeline-app || true
+          docker rm pipeline-app || true
+
+          # Deploy with Docker Compose
+          docker-compose up -d
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -f http://localhost:8000/ || exit 1
+          echo "✅ Application deployed successfully!"
+
+      - name: Add PROD label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: ${{ needs.check-merge.outputs.pr_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['PROD']
+            })
