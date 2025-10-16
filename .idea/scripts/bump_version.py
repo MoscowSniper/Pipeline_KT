@@ -16,7 +16,7 @@ def bump_version(old_version, bump_type):
     while len(v) < 3:
         v.append(0)
     if bump_type == 'feature':
-        # increase minor (v[1]) and zero-out patch TEST
+        # increase minor (v[1]) and zero-out patch fix
         v[1] += 1
         v[2] = 0
     elif bump_type == 'hotfix':
