@@ -1,3 +1,9 @@
+## 0.31.1 — branch: master
+
+6b44248 - Merge pull request #22 from MoscowSniper/hotfix/minor-fix (MoscowSniper)
+2cd6f84 - fixed some issues (Богдан)
+a6878c1 - fixed some issues (Богдан)
+
 ## 0.31.0 — branch: master
 
 dc261db - Update README.md (MoscowSniper)
