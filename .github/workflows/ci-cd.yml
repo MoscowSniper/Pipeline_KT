@@ -45,7 +45,7 @@ jobs:
   # Эти jobs запускаются ТОЛЬКО для main/master веток
   update-version:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: [test, security]
+    needs: [ test, security ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -77,9 +77,9 @@ jobs:
         run: |
           OLD_VERSION=$(cat .idea/version.txt)
           echo "Old version: $OLD_VERSION"
-          
+
           python .idea/scripts/bump_version.py ${{ steps.update-type.outputs.type }}
-          
+
           NEW_VERSION=$(cat .idea/version.txt)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
